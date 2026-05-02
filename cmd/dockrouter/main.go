@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -335,11 +336,19 @@ func (a *App) buildHTTPHandler(handler http.Handler) http.Handler {
 		// HTTP to HTTPS redirect
 		if a.config.DefaultTLS != "off" && r.TLS == nil {
 			if r.Header.Get("X-Forwarded-Proto") != "https" {
-				target := fmt.Sprintf("https://%s%s", r.Host, r.URL.Path)
-				if r.URL.RawQuery != "" {
-					target += "?" + r.URL.RawQuery
+				host, _, err := net.SplitHostPort(r.Host)
+				if err != nil {
+					host = r.Host
 				}
-				http.Redirect(w, r, target, http.StatusMovedPermanently)
+				if a.routeTable.Match(host, r.URL.Path) != nil {
+					target := fmt.Sprintf("https://%s%s", r.Host, r.URL.Path)
+					if r.URL.RawQuery != "" {
+						target += "?" + r.URL.RawQuery
+					}
+					http.Redirect(w, r, target, http.StatusMovedPermanently)
+					return
+				}
+				http.Error(w, "Bad Request", http.StatusBadRequest)
 				return
 			}
 		}

@@ -13,6 +13,7 @@ import (
 type RouteMiddlewareBuilder struct {
 	rateLimiters    sync.Map // routeID -> *middleware.RateLimiter
 	circuitBreakers sync.Map // routeID -> *middleware.CircuitBreaker
+	chainCache      sync.Map // routeID -> http.Handler
 }
 
 // NewRouteMiddlewareBuilder creates a new middleware builder
@@ -22,6 +23,11 @@ func NewRouteMiddlewareBuilder() *RouteMiddlewareBuilder {
 
 // BuildChain builds a middleware chain for a route
 func (b *RouteMiddlewareBuilder) BuildChain(route *Route, next http.Handler) http.Handler {
+	// Return cached chain if available (the `next` handler is the same proxy handler)
+	if cached, ok := b.chainCache.Load(route.ID); ok {
+		return cached.(http.Handler)
+	}
+
 	chain := next
 
 	// Apply rate limiting
@@ -85,6 +91,7 @@ func (b *RouteMiddlewareBuilder) BuildChain(route *Route, next http.Handler) htt
 		chain = cb.Middleware()(chain)
 	}
 
+	b.chainCache.Store(route.ID, chain)
 	return chain
 }
 
@@ -119,6 +126,7 @@ func (b *RouteMiddlewareBuilder) RemoveRateLimiter(routeID string) {
 	if rl, ok := b.rateLimiters.LoadAndDelete(routeID); ok {
 		rl.(*middleware.RateLimiter).Close()
 	}
+	b.InvalidateChain(routeID)
 }
 
 // getOrCreateCircuitBreaker gets or creates a circuit breaker for a route
@@ -148,4 +156,10 @@ func (b *RouteMiddlewareBuilder) getOrCreateCircuitBreaker(routeID string, confi
 // RemoveCircuitBreaker removes the circuit breaker for a route (cleanup on route removal)
 func (b *RouteMiddlewareBuilder) RemoveCircuitBreaker(routeID string) {
 	b.circuitBreakers.Delete(routeID)
+	b.InvalidateChain(routeID)
+}
+
+// InvalidateChain removes the cached middleware chain for a route
+func (b *RouteMiddlewareBuilder) InvalidateChain(routeID string) {
+	b.chainCache.Delete(routeID)
 }

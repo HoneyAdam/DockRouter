@@ -27,13 +27,13 @@ func Metrics(collector MetricsCollector) Middleware {
 			// Increment active requests
 			collector.IncCounter("http_requests_total")
 			collector.IncGauge("http_requests_active")
+			defer collector.DecGauge("http_requests_active")
 
 			next.ServeHTTP(wrapped, r)
 
 			// Record metrics
 			duration := time.Since(start).Seconds()
 			collector.ObserveHistogram("http_request_duration_seconds", duration)
-			collector.DecGauge("http_requests_active")
 
 			// Record status code
 			if wrapped.status >= 400 {

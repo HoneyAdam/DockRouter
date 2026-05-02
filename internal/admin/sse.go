@@ -76,7 +76,8 @@ func (h *SSEHub) Run() {
 func (h *SSEHub) Stop() {
 	close(h.done)
 
-	// Close all client channels so handler goroutines can exit
+	// Let Run() handle client cleanup via the unregister path
+	// Just clear the map to prevent new registrations
 	h.mu.Lock()
 	for client := range h.clients {
 		close(client.ch)
@@ -112,8 +113,20 @@ func (h *SSEHub) Handler() http.HandlerFunc {
 			flush: make(chan struct{}),
 		}
 
-		h.register <- client
-		defer func() { h.unregister <- client }()
+		select {
+		case h.register <- client:
+		case <-h.done:
+			return
+		case <-r.Context().Done():
+			return
+		}
+		defer func() {
+			select {
+			case h.unregister <- client:
+			case <-h.done:
+			case <-r.Context().Done():
+			}
+		}()
 
 		for {
 			select {

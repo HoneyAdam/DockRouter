@@ -225,11 +225,22 @@ func normalizeHost(host string) string {
 
 // wildcardMatch checks if host matches a wildcard pattern
 func wildcardMatch(pattern, host string) bool {
-	// Pattern is like *.example.com
 	if !strings.HasPrefix(pattern, "*.") {
 		return false
 	}
 
 	suffix := pattern[1:] // .example.com
-	return strings.HasSuffix(host, suffix) || host == pattern[2:]
+
+	// Exact bare domain match (e.g., example.com matches *.example.com)
+	if host == pattern[2:] {
+		return true
+	}
+
+	// Subdomain match: host must end with suffix AND the character before
+	// the suffix must be a dot, preventing evil-example.com from matching *.example.com
+	if strings.HasSuffix(host, suffix) && len(host) > len(suffix) && host[len(host)-len(suffix)-1] == '.' {
+		return true
+	}
+
+	return false
 }

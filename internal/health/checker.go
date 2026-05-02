@@ -19,6 +19,7 @@ type Checker struct {
 type HealthCheck struct {
 	Target     string
 	Path       string
+	Type       string // "http" or "tcp", defaults to "http"
 	Interval   time.Duration
 	Timeout    time.Duration
 	Threshold  int
@@ -85,7 +86,16 @@ func (c *Checker) checkAll() {
 }
 
 func (c *Checker) checkOne(target string, check *HealthCheck) {
-	healthy, err := HTTPCheck(target, check.Path, check.Timeout)
+	var healthy bool
+	var err error
+
+	switch check.Type {
+	case "tcp":
+		healthy, err = TCPCheck(target, check.Timeout)
+	default:
+		healthy, err = HTTPCheck(target, check.Path, check.Timeout)
+	}
+
 	if err != nil {
 		healthy = false
 	}

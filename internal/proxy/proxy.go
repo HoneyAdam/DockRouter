@@ -2,14 +2,22 @@
 package proxy
 
 import (
+	"context"
 	"fmt"
 	"html"
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"strings"
 	"time"
+)
+
+type contextKey string
+
+const (
+	targetKey   contextKey = "target"
+	errorKey    contextKey = "proxyError"
+	originalKey contextKey = "original"
 )
 
 // Proxy handles reverse proxying to backend containers
@@ -18,6 +26,7 @@ type Proxy struct {
 	bufferPool     *bufferPool
 	logger         Logger
 	websocketProxy *WebSocketProxy
+	rp             *httputil.ReverseProxy
 }
 
 // Logger interface for proxy
@@ -36,56 +45,47 @@ func NewProxy(logger Logger) *Proxy {
 		logger:     logger,
 	}
 	p.websocketProxy = NewWebSocketProxy(logger)
+
+	p.rp = &httputil.ReverseProxy{
+		Transport:  p.transport,
+		BufferPool: p.bufferPool,
+		Director: func(req *http.Request) {
+			target := req.Context().Value(targetKey).(string)
+			original := req.Context().Value(originalKey).(*http.Request)
+
+			req.URL.Scheme = "http"
+			req.URL.Host = target
+			p.setForwardedHeaders(req, original)
+		},
+		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
+			errPtr := r.Context().Value(errorKey).(*error)
+			*errPtr = err
+			p.errorHandler(w, r, err)
+		},
+		ModifyResponse: func(resp *http.Response) error {
+			p.logger.Debug("Response received",
+				"status", resp.StatusCode,
+				"target", resp.Request.URL.Host,
+			)
+			return nil
+		},
+	}
 	return p
 }
 
 // ServeHTTP proxies the request to the target backend
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, target string) error {
-	// Parse target URL
-	targetURL, err := url.Parse("http://" + target)
-	if err != nil {
-		return fmt.Errorf("invalid target URL: %w", err)
-	}
-
 	// Route WebSocket requests through WebSocketProxy
 	if IsWebSocketRequest(r) {
 		return p.websocketProxy.ServeHTTP(w, r, target)
 	}
 
-	// Create reverse proxy
-	proxy := httputil.NewSingleHostReverseProxy(targetURL)
-	proxy.Transport = p.transport
-	proxy.BufferPool = p.bufferPool
-
-	// Track proxy errors via closure
 	var proxyErr error
-	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		proxyErr = err
-		p.errorHandler(w, r, err)
-	}
+	ctx := context.WithValue(r.Context(), targetKey, target)
+	ctx = context.WithValue(ctx, errorKey, &proxyErr)
+	ctx = context.WithValue(ctx, originalKey, r)
 
-	// Director to modify request before forwarding
-	originalDirector := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		originalDirector(req)
-
-		// Set X-Forwarded headers
-		p.setForwardedHeaders(req, r)
-	}
-
-	// Modify response to capture status
-	proxy.ModifyResponse = func(resp *http.Response) error {
-		// Log response status
-		p.logger.Debug("Response received",
-			"status", resp.StatusCode,
-			"target", target,
-		)
-		return nil
-	}
-
-	// Forward the request
-	proxy.ServeHTTP(w, r)
-
+	p.rp.ServeHTTP(w, r.WithContext(ctx))
 	return proxyErr
 }
 

@@ -195,8 +195,10 @@ func (e *Engine) buildContainerInfo(c Container, detail *ContainerDetail, config
 	// Check health status
 	if detail.State.Healthy {
 		info.Healthy = true
-	} else if detail.State.Running {
-		info.Healthy = true // Assume healthy if running
+	} else if detail.State.Running && detail.State.Status != "unhealthy" {
+		// Only assume healthy if running and not explicitly unhealthy
+		// (containers without health checks have empty Status)
+		info.Healthy = true
 	}
 
 	return info
