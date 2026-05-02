@@ -34,11 +34,14 @@ func (t *Table) Add(route *Route) {
 		t.removeFromTrees(existing)
 	}
 
+	// Deep copy to prevent caller mutation
+	cloned := route.Clone()
+
 	// Add to routes map
-	t.routes[route.ID] = route
+	t.routes[route.ID] = cloned
 
 	// Add to appropriate tree
-	t.addToTree(route)
+	t.addToTree(cloned)
 }
 
 // Remove deletes a route by ID

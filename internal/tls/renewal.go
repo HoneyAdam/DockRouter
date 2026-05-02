@@ -9,11 +9,12 @@ import (
 
 // RenewalScheduler handles automatic certificate renewal
 type RenewalScheduler struct {
-	manager  *Manager
-	interval time.Duration
-	logger   Logger
-	wg       sync.WaitGroup
-	cancel   context.CancelFunc
+	manager   *Manager
+	interval  time.Duration
+	logger    Logger
+	wg        sync.WaitGroup
+	cancel    context.CancelFunc
+	startOnce sync.Once
 }
 
 // Logger interface for TLS package
@@ -33,14 +34,13 @@ func NewRenewalScheduler(manager *Manager, logger Logger) *RenewalScheduler {
 	}
 }
 
-// Start begins the renewal check loop. It is not safe to call Start more than once.
+// Start begins the renewal check loop. Safe to call multiple times; only the first call takes effect.
 func (s *RenewalScheduler) Start(ctx context.Context) {
-	if s.cancel != nil {
-		return // already started
-	}
-	ctx, s.cancel = context.WithCancel(ctx)
-	s.wg.Add(1)
-	go s.run(ctx)
+	s.startOnce.Do(func() {
+		ctx, s.cancel = context.WithCancel(ctx)
+		s.wg.Add(1)
+		go s.run(ctx)
+	})
 }
 
 func (s *RenewalScheduler) run(ctx context.Context) {

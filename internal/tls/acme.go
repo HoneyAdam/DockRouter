@@ -103,6 +103,21 @@ func (e *ACMEError) Error() string {
 	return fmt.Sprintf("ACME error: %s - %s", e.Type, e.Detail)
 }
 
+// checkResponseStatus checks if the HTTP response has a successful status code.
+// For 2xx codes it returns nil. For non-2xx it tries to decode an ACMEError from
+// the body, falling back to a generic error with the status code.
+func checkResponseStatus(resp *http.Response) error {
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		return nil
+	}
+	body, _ := io.ReadAll(resp.Body)
+	var acmeErr ACMEError
+	if err := json.Unmarshal(body, &acmeErr); err == nil && acmeErr.Detail != "" {
+		return &acmeErr
+	}
+	return fmt.Errorf("ACME request failed: HTTP %d", resp.StatusCode)
+}
+
 // NewACMEClient creates a new ACME client
 func NewACMEClient(directoryURL, email string) *ACMEClient {
 	return &ACMEClient{
@@ -151,6 +166,10 @@ func (c *ACMEClient) fetchDirectory() error {
 	}
 	defer resp.Body.Close()
 
+	if err := checkResponseStatus(resp); err != nil {
+		return err
+	}
+
 	var dir ACMEDirectory
 	if err := json.NewDecoder(resp.Body).Decode(&dir); err != nil {
 		return err
@@ -190,6 +209,10 @@ func (c *ACMEClient) createOrGetAccount() error {
 	}
 	defer resp.Body.Close()
 
+	if err := checkResponseStatus(resp); err != nil {
+		return err
+	}
+
 	// Store account URL from Location header
 	if loc := resp.Header.Get("Location"); loc != "" {
 		c.accountURL = loc
@@ -215,6 +238,10 @@ func (c *ACMEClient) RequestOrder(domains []string) (*ACMEOrder, error) {
 	}
 	defer resp.Body.Close()
 
+	if err := checkResponseStatus(resp); err != nil {
+		return nil, err
+	}
+
 	var order ACMEOrder
 	if err := json.NewDecoder(resp.Body).Decode(&order); err != nil {
 		return nil, err
@@ -230,6 +257,10 @@ func (c *ACMEClient) GetAuthorization(url string) (*ACMEAuthorization, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if err := checkResponseStatus(resp); err != nil {
+		return nil, err
+	}
 
 	var auth ACMEAuthorization
 	if err := json.NewDecoder(resp.Body).Decode(&auth); err != nil {
@@ -247,6 +278,10 @@ func (c *ACMEClient) GetChallenge(url string) (*Challenge, error) {
 	}
 	defer resp.Body.Close()
 
+	if err := checkResponseStatus(resp); err != nil {
+		return nil, err
+	}
+
 	var ch Challenge
 	if err := json.NewDecoder(resp.Body).Decode(&ch); err != nil {
 		return nil, err
@@ -262,6 +297,10 @@ func (c *ACMEClient) TriggerChallenge(url string) (*Challenge, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if err := checkResponseStatus(resp); err != nil {
+		return nil, err
+	}
 
 	var ch Challenge
 	if err := json.NewDecoder(resp.Body).Decode(&ch); err != nil {
@@ -283,6 +322,10 @@ func (c *ACMEClient) FinalizeOrder(order *ACMEOrder, csr []byte) error {
 	}
 	defer resp.Body.Close()
 
+	if err := checkResponseStatus(resp); err != nil {
+		return err
+	}
+
 	var finalized ACMEOrder
 	if err := json.NewDecoder(resp.Body).Decode(&finalized); err != nil {
 		return err
@@ -302,6 +345,10 @@ func (c *ACMEClient) DownloadCertificate(url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
+	if err := checkResponseStatus(resp); err != nil {
+		return nil, err
+	}
+
 	return io.ReadAll(resp.Body)
 }
 
@@ -312,6 +359,11 @@ func (c *ACMEClient) PollOrder(orderURL string, desiredStatus string, timeout ti
 	for time.Now().Before(deadline) {
 		resp, err := c.signedGet(orderURL)
 		if err != nil {
+			return nil, err
+		}
+
+		if err := checkResponseStatus(resp); err != nil {
+			resp.Body.Close()
 			return nil, err
 		}
 

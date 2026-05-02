@@ -190,6 +190,9 @@ func (a *App) initialize() error {
 }
 
 func (a *App) start(ctx context.Context) {
+	// Initialize middleware builder before launching any goroutines
+	a.middlewareBuilder = router.NewRouteMiddlewareBuilder()
+
 	// Start health checker
 	go a.healthChecker.Start(ctx)
 
@@ -208,9 +211,6 @@ func (a *App) start(ctx context.Context) {
 
 	// Initialize proxy
 	pxy := proxy.NewProxy(a.logger)
-
-	// Initialize middleware builder (shared for cleanup)
-	a.middlewareBuilder = router.NewRouteMiddlewareBuilder()
 
 	// Initialize router with shared middleware builder
 	httpRouter := router.NewRouterWithMiddleware(a.routeTable, pxy, a.logger, a.middlewareBuilder)

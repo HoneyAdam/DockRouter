@@ -170,13 +170,23 @@ func loadInt(target *int, key string) {
 	if v := os.Getenv(key); v != "" {
 		if i, err := strconv.Atoi(v); err == nil {
 			*target = i
+		} else {
+			fmt.Fprintf(os.Stderr, "warning: invalid value for %s: %q\n", key, v)
 		}
 	}
 }
 
 func loadBool(target *bool, key string) {
 	if v := os.Getenv(key); v != "" {
-		*target = strings.ToLower(v) == "true" || v == "1"
+		lower := strings.ToLower(v)
+		if lower == "true" || v == "1" {
+			*target = true
+		} else if lower == "false" || v == "0" {
+			*target = false
+		} else {
+			fmt.Fprintf(os.Stderr, "warning: invalid value for %s: %q (expected true/false or 1/0)\n", key, v)
+			*target = false
+		}
 	}
 }
 
@@ -184,6 +194,8 @@ func loadDuration(target *time.Duration, key string) {
 	if v := os.Getenv(key); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
 			*target = d
+		} else {
+			fmt.Fprintf(os.Stderr, "warning: invalid duration for %s: %q\n", key, v)
 		}
 	}
 }

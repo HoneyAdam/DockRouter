@@ -8,6 +8,12 @@ import (
 	"time"
 )
 
+var rng *rand.Rand
+
+func init() {
+	rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+}
+
 // LoadBalanceStrategy defines load balancing algorithm
 type LoadBalanceStrategy int
 
@@ -140,7 +146,7 @@ func (p *BackendPool) selectRoundRobin(targets []*BackendTarget) *BackendTarget 
 
 // selectRandom selects a random backend
 func (p *BackendPool) selectRandom(targets []*BackendTarget) *BackendTarget {
-	return targets[rand.Intn(len(targets))]
+	return targets[rng.Intn(len(targets))]
 }
 
 // selectIPHash selects based on client IP hash

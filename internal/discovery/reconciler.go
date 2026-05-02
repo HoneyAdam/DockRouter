@@ -3,6 +3,7 @@ package discovery
 
 import (
 	"context"
+	"net"
 	"strings"
 	"sync"
 	"time"
@@ -362,20 +363,19 @@ func (e *Engine) pollLoop(ctx context.Context) {
 	}
 }
 
-// GetContainers returns all discovered containers (returns copies to avoid data races)
+// GetContainers returns all discovered containers (returns deep copies to avoid data races)
 func (e *Engine) GetContainers() []*ContainerInfo {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
 	result := make([]*ContainerInfo, 0, len(e.containers))
 	for _, info := range e.containers {
-		cp := *info
-		result = append(result, &cp)
+		result = append(result, info.deepCopy())
 	}
 	return result
 }
 
-// GetContainer returns a specific container (returns a copy to avoid data races)
+// GetContainer returns a specific container (returns a deep copy to avoid data races)
 func (e *Engine) GetContainer(id string) *ContainerInfo {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
@@ -383,7 +383,90 @@ func (e *Engine) GetContainer(id string) *ContainerInfo {
 	if !ok {
 		return nil
 	}
-	cp := *info
+	return info.deepCopy()
+}
+
+// deepCopy creates a deep copy of ContainerInfo, including all nested reference types.
+func (ci *ContainerInfo) deepCopy() *ContainerInfo {
+	cp := *ci
+
+	// Deep copy Labels map
+	if ci.Labels != nil {
+		cp.Labels = make(map[string]string, len(ci.Labels))
+		for k, v := range ci.Labels {
+			cp.Labels[k] = v
+		}
+	}
+
+	// Deep copy Config
+	if ci.Config != nil {
+		cfg := *ci.Config
+
+		// TLSDomains
+		if ci.Config.TLSDomains != nil {
+			cfg.TLSDomains = make([]string, len(ci.Config.TLSDomains))
+			copy(cfg.TLSDomains, ci.Config.TLSDomains)
+		}
+
+		// CORS.Origins
+		if ci.Config.CORS.Origins != nil {
+			cfg.CORS.Origins = make([]string, len(ci.Config.CORS.Origins))
+			copy(cfg.CORS.Origins, ci.Config.CORS.Origins)
+		}
+
+		// CORS.Methods
+		if ci.Config.CORS.Methods != nil {
+			cfg.CORS.Methods = make([]string, len(ci.Config.CORS.Methods))
+			copy(cfg.CORS.Methods, ci.Config.CORS.Methods)
+		}
+
+		// CORS.Headers
+		if ci.Config.CORS.Headers != nil {
+			cfg.CORS.Headers = make([]string, len(ci.Config.CORS.Headers))
+			copy(cfg.CORS.Headers, ci.Config.CORS.Headers)
+		}
+
+		// BasicAuthUsers
+		if ci.Config.BasicAuthUsers != nil {
+			cfg.BasicAuthUsers = make([]BasicAuthUser, len(ci.Config.BasicAuthUsers))
+			copy(cfg.BasicAuthUsers, ci.Config.BasicAuthUsers)
+		}
+
+		// IPWhitelist
+		if ci.Config.IPWhitelist != nil {
+			cfg.IPWhitelist = make([]*net.IPNet, len(ci.Config.IPWhitelist))
+			for i, cidr := range ci.Config.IPWhitelist {
+				cpy := *cidr
+				cfg.IPWhitelist[i] = &cpy
+			}
+		}
+
+		// IPBlacklist
+		if ci.Config.IPBlacklist != nil {
+			cfg.IPBlacklist = make([]*net.IPNet, len(ci.Config.IPBlacklist))
+			for i, cidr := range ci.Config.IPBlacklist {
+				cpy := *cidr
+				cfg.IPBlacklist[i] = &cpy
+			}
+		}
+
+		// Middlewares
+		if ci.Config.Middlewares != nil {
+			cfg.Middlewares = make([]string, len(ci.Config.Middlewares))
+			copy(cfg.Middlewares, ci.Config.Middlewares)
+		}
+
+		// RawLabels
+		if ci.Config.RawLabels != nil {
+			cfg.RawLabels = make(map[string]string, len(ci.Config.RawLabels))
+			for k, v := range ci.Config.RawLabels {
+				cfg.RawLabels[k] = v
+			}
+		}
+
+		cp.Config = &cfg
+	}
+
 	return &cp
 }
 

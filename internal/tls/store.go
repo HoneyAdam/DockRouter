@@ -18,8 +18,14 @@ var ErrNoPEMData = errors.New("no PEM data found")
 
 // Store handles certificate filesystem storage
 type Store struct {
-	mu      sync.RWMutex
-	dataDir string
+	domainLocks sync.Map // map[string]*sync.RWMutex
+	dataDir     string
+}
+
+// getDomainLock returns a per-domain RWMutex, creating one if needed
+func (s *Store) getDomainLock(domain string) *sync.RWMutex {
+	val, _ := s.domainLocks.LoadOrStore(domain, &sync.RWMutex{})
+	return val.(*sync.RWMutex)
 }
 
 // NewStore creates a new certificate store
@@ -37,8 +43,9 @@ type CertMeta struct {
 
 // Save writes a certificate to disk
 func (s *Store) Save(domain string, certPEM, keyPEM []byte) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getDomainLock(domain)
+	mu.Lock()
+	defer mu.Unlock()
 
 	dir := filepath.Join(s.dataDir, "certificates", domain)
 	if err := os.MkdirAll(dir, 0700); err != nil {
@@ -60,8 +67,9 @@ func (s *Store) Save(domain string, certPEM, keyPEM []byte) error {
 
 // SaveMeta saves certificate metadata
 func (s *Store) SaveMeta(domain string, meta *CertMeta) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getDomainLock(domain)
+	mu.Lock()
+	defer mu.Unlock()
 
 	dir := filepath.Join(s.dataDir, "certificates", domain)
 	metaBytes, err := json.MarshalIndent(meta, "", "  ")
@@ -73,8 +81,9 @@ func (s *Store) SaveMeta(domain string, meta *CertMeta) error {
 
 // Load reads a certificate from disk
 func (s *Store) Load(domain string) (*tls.Certificate, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	mu := s.getDomainLock(domain)
+	mu.RLock()
+	defer mu.RUnlock()
 
 	dir := filepath.Join(s.dataDir, "certificates", domain)
 	cert, err := tls.LoadX509KeyPair(
@@ -89,8 +98,9 @@ func (s *Store) Load(domain string) (*tls.Certificate, error) {
 
 // LoadPEM loads certificate PEM data
 func (s *Store) LoadPEM(domain string) (certPEM, keyPEM []byte, err error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	mu := s.getDomainLock(domain)
+	mu.RLock()
+	defer mu.RUnlock()
 
 	dir := filepath.Join(s.dataDir, "certificates", domain)
 	certPEM, err = os.ReadFile(filepath.Join(dir, "cert.pem"))
@@ -106,8 +116,9 @@ func (s *Store) LoadPEM(domain string) (certPEM, keyPEM []byte, err error) {
 
 // LoadMeta loads certificate metadata
 func (s *Store) LoadMeta(domain string) (*CertMeta, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	mu := s.getDomainLock(domain)
+	mu.RLock()
+	defer mu.RUnlock()
 
 	dir := filepath.Join(s.dataDir, "certificates", domain)
 	data, err := os.ReadFile(filepath.Join(dir, "meta.json"))
@@ -123,8 +134,9 @@ func (s *Store) LoadMeta(domain string) (*CertMeta, error) {
 
 // Exists checks if a certificate exists
 func (s *Store) Exists(domain string) bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	mu := s.getDomainLock(domain)
+	mu.RLock()
+	defer mu.RUnlock()
 
 	dir := filepath.Join(s.dataDir, "certificates", domain)
 	_, err := os.Stat(filepath.Join(dir, "cert.pem"))
@@ -133,9 +145,6 @@ func (s *Store) Exists(domain string) bool {
 
 // List returns all domains with certificates
 func (s *Store) List() ([]string, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	dir := filepath.Join(s.dataDir, "certificates")
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -155,8 +164,9 @@ func (s *Store) List() ([]string, error) {
 
 // Delete removes a certificate
 func (s *Store) Delete(domain string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	mu := s.getDomainLock(domain)
+	mu.Lock()
+	defer mu.Unlock()
 
 	dir := filepath.Join(s.dataDir, "certificates", domain)
 	return os.RemoveAll(dir)

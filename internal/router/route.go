@@ -101,3 +101,58 @@ func (t *TLSConfig) IsEnabled() bool {
 func (t *TLSConfig) IsAuto() bool {
 	return t.Mode == "auto"
 }
+
+// Clone creates a deep copy of the route
+func (r *Route) Clone() *Route {
+	cp := *r
+
+	// Deep copy slices
+	if r.Middlewares != nil {
+		cp.Middlewares = make([]string, len(r.Middlewares))
+		copy(cp.Middlewares, r.Middlewares)
+	}
+	if r.Labels != nil {
+		cp.Labels = make(map[string]string, len(r.Labels))
+		for k, v := range r.Labels {
+			cp.Labels[k] = v
+		}
+	}
+	if r.TLS.Domains != nil {
+		cp.TLS.Domains = make([]string, len(r.TLS.Domains))
+		copy(cp.TLS.Domains, r.TLS.Domains)
+	}
+
+	// Deep copy MiddlewareConfig slices
+	if r.MiddlewareConfig.BasicAuthUsers != nil {
+		cp.MiddlewareConfig.BasicAuthUsers = make([]BasicAuthUser, len(r.MiddlewareConfig.BasicAuthUsers))
+		copy(cp.MiddlewareConfig.BasicAuthUsers, r.MiddlewareConfig.BasicAuthUsers)
+	}
+	if r.MiddlewareConfig.IPWhitelist != nil {
+		cp.MiddlewareConfig.IPWhitelist = make([]*net.IPNet, len(r.MiddlewareConfig.IPWhitelist))
+		for i, cidr := range r.MiddlewareConfig.IPWhitelist {
+			cpy := *cidr
+			cp.MiddlewareConfig.IPWhitelist[i] = &cpy
+		}
+	}
+	if r.MiddlewareConfig.IPBlacklist != nil {
+		cp.MiddlewareConfig.IPBlacklist = make([]*net.IPNet, len(r.MiddlewareConfig.IPBlacklist))
+		for i, cidr := range r.MiddlewareConfig.IPBlacklist {
+			cpy := *cidr
+			cp.MiddlewareConfig.IPBlacklist[i] = &cpy
+		}
+	}
+	if r.MiddlewareConfig.CORS.Origins != nil {
+		cp.MiddlewareConfig.CORS.Origins = make([]string, len(r.MiddlewareConfig.CORS.Origins))
+		copy(cp.MiddlewareConfig.CORS.Origins, r.MiddlewareConfig.CORS.Origins)
+	}
+	if r.MiddlewareConfig.CORS.Methods != nil {
+		cp.MiddlewareConfig.CORS.Methods = make([]string, len(r.MiddlewareConfig.CORS.Methods))
+		copy(cp.MiddlewareConfig.CORS.Methods, r.MiddlewareConfig.CORS.Methods)
+	}
+	if r.MiddlewareConfig.CORS.Headers != nil {
+		cp.MiddlewareConfig.CORS.Headers = make([]string, len(r.MiddlewareConfig.CORS.Headers))
+		copy(cp.MiddlewareConfig.CORS.Headers, r.MiddlewareConfig.CORS.Headers)
+	}
+
+	return &cp
+}
