@@ -11,7 +11,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/dl/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](https://hub.docker.com/r/dockrouter/dockrouter)
 [![GitHub Release](https://img.shields.io/github/v/release/DockRouter/dockrouter?include_prereleases)](https://github.com/DockRouter/dockrouter/releases)
-[![Coverage](https://img.shields.io/badge/Coverage-82.7%25-yellow)](.)
+[![Coverage](https://img.shields.io/badge/Coverage-86.4%25-brightgreen)](.)
 
 ---
 
@@ -485,7 +485,7 @@ dockrouter/
 └── README.md                # This file
 ```
 
-**Overall test coverage: ~83% overall (targeting 85%+)**
+**Overall test coverage: ~86% overall (targeting 85%+)**
 
 ---
 
