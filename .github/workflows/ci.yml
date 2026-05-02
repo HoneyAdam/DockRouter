@@ -33,15 +33,15 @@ jobs:
       - name: Print coverage summary
         run: go tool cover -func=coverage.out
 
-      - name: Check coverage threshold (75%)
+      - name: Check coverage threshold (80%)
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           echo "Total coverage: ${COVERAGE}%"
-          if (( $(echo "$COVERAGE < 75" | bc -l) )); then
-            echo "::error::Coverage ${COVERAGE}% is below the 75% threshold"
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "::error::Coverage ${COVERAGE}% is below the 80% threshold"
             exit 1
           fi
-          echo "Coverage check passed (${COVERAGE}% >= 75%)"
+          echo "Coverage check passed (${COVERAGE}% >= 80%)"
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
