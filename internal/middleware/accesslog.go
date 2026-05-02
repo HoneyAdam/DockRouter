@@ -4,6 +4,7 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -29,7 +30,7 @@ func AccessLog(next http.Handler) http.Handler {
 		fmt.Printf("[%s] %s %s %d %dms\n",
 			time.Now().Format("2006-01-02T15:04:05.999"),
 			r.Method,
-			r.URL.Path,
+			sanitizeLogField(r.URL.Path),
 			wrapped.status,
 			duration.Milliseconds(),
 		)
@@ -51,7 +52,7 @@ func AccessLogWithLogger(logger Logger) Middleware {
 
 			logger.Info("request",
 				"method", r.Method,
-				"path", r.URL.Path,
+				"path", sanitizeLogField(r.URL.Path),
 				"status", wrapped.status,
 				"duration_ms", duration.Milliseconds(),
 				"remote_addr", r.RemoteAddr,
@@ -91,4 +92,12 @@ func newResponseWriter(w http.ResponseWriter) *responseWriter {
 func (w *responseWriter) WriteHeader(status int) {
 	w.status = status
 	w.ResponseWriter.WriteHeader(status)
+}
+
+// sanitizeLogField escapes carriage return and newline characters to prevent
+// log injection via malicious URL paths.
+func sanitizeLogField(s string) string {
+	s = strings.ReplaceAll(s, "\r", "\\r")
+	s = strings.ReplaceAll(s, "\n", "\\n")
+	return s
 }

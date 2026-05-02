@@ -14,6 +14,20 @@ import (
 	"time"
 )
 
+// validateContainerID ensures the container ID only contains hex characters
+// to prevent path traversal attacks in Docker API calls.
+func validateContainerID(id string) error {
+	if len(id) == 0 {
+		return fmt.Errorf("empty container ID")
+	}
+	for _, c := range id {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return fmt.Errorf("invalid container ID: %s", id)
+		}
+	}
+	return nil
+}
+
 // DockerAPIVersion is the Docker API version to use
 const DockerAPIVersion = "v1.53"
 
@@ -77,12 +91,12 @@ func (c *DockerClient) doRequest(ctx context.Context, method, path string) ([]by
 
 	// Check status
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		return nil, fmt.Errorf("docker API error: %s - %s", resp.Status, string(body))
 	}
 
 	// Read body
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20)) // 10MB max
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -123,7 +137,7 @@ func (c *DockerClient) doStreamRequest(ctx context.Context, method, path string)
 	// Check status
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		conn.Close()
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		return nil, fmt.Errorf("docker API error: %s - %s", resp.Status, string(body))
 	}
 
@@ -259,6 +273,9 @@ type ContainerHostConfig struct {
 
 // InspectContainer returns detailed info for a container
 func (c *DockerClient) InspectContainer(ctx context.Context, id string) (*ContainerDetail, error) {
+	if err := validateContainerID(id); err != nil {
+		return nil, err
+	}
 	path := fmt.Sprintf("/containers/%s/json", id)
 
 	body, err := c.doRequest(ctx, http.MethodGet, path)

@@ -320,6 +320,9 @@ func (a *App) buildMiddlewareChain(handler http.Handler) http.Handler {
 		chain = middleware.Chain(chain, middleware.AccessLog)
 	}
 
+	// 30s request timeout
+	chain = middleware.Chain(chain, middleware.Timeout(30*time.Second))
+
 	chain = middleware.Chain(chain, middleware.SecurityHeaders)
 
 	return chain(handler)

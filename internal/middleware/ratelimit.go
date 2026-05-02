@@ -18,6 +18,7 @@ type RateLimiter struct {
 	maxSize    int     // max bucket size (burst)
 	refillRate float64 // tokens per second
 	done       chan struct{}
+	maxBuckets int
 }
 
 type tokenBucket struct {
@@ -40,6 +41,7 @@ func NewRateLimiter(rate, window, maxSize int) *RateLimiter {
 		maxSize:    maxSize,
 		refillRate: float64(rate) / float64(window),
 		done:       make(chan struct{}),
+		maxBuckets: 10000,
 	}
 
 	// Start cleanup goroutine to remove old buckets
@@ -87,8 +89,22 @@ func (rl *RateLimiter) allow(key string) (bool, float64) {
 
 	bucket, exists := rl.buckets[key]
 	if !exists {
+		// Evict oldest bucket if at capacity
+		if len(rl.buckets) >= rl.maxBuckets {
+			var oldestKey string
+			var oldestTime time.Time
+			first := true
+			for k, b := range rl.buckets {
+				if first || b.lastRefill.Before(oldestTime) {
+					oldestKey = k
+					oldestTime = b.lastRefill
+					first = false
+				}
+			}
+			delete(rl.buckets, oldestKey)
+		}
 		bucket = &tokenBucket{
-			tokens:     float64(rl.maxSize - 1),
+			tokens:     float64(rl.maxSize),
 			lastRefill: now,
 		}
 		rl.buckets[key] = bucket

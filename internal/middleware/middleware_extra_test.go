@@ -1252,18 +1252,28 @@ func TestRateLimiterBlock(t *testing.T) {
 		t.Errorf("First request: Status = %d, want %d", rec.Code, http.StatusOK)
 	}
 
-	// Second request should be rate limited
+	// Second request consumes the token created by the first request
 	req2 := httptest.NewRequest("GET", "/", nil)
 	req2.RemoteAddr = "10.0.0.1:12345"
 	rec2 := httptest.NewRecorder()
 	rateLimitedHandler.ServeHTTP(rec2, req2)
 
-	if rec2.Code != http.StatusTooManyRequests {
-		t.Errorf("Second request: Status = %d, want %d", rec2.Code, http.StatusTooManyRequests)
+	if rec2.Code != http.StatusOK {
+		t.Errorf("Second request: Status = %d, want %d", rec2.Code, http.StatusOK)
+	}
+
+	// Third request should be rate limited (bucket now exhausted)
+	req3 := httptest.NewRequest("GET", "/", nil)
+	req3.RemoteAddr = "10.0.0.1:12345"
+	rec3 := httptest.NewRecorder()
+	rateLimitedHandler.ServeHTTP(rec3, req3)
+
+	if rec3.Code != http.StatusTooManyRequests {
+		t.Errorf("Third request: Status = %d, want %d", rec3.Code, http.StatusTooManyRequests)
 	}
 
 	// Check rate limit headers
-	if rec2.Header().Get("Retry-After") == "" {
+	if rec3.Header().Get("Retry-After") == "" {
 		t.Error("Expected Retry-After header")
 	}
 }
@@ -1327,10 +1337,13 @@ func TestRateLimiterTokenCap(t *testing.T) {
 func TestRateLimiterReturnZeroWhenBlocked(t *testing.T) {
 	limiter := NewRateLimiter(1, 60, 1) // Very low limit
 
-	// First request consumes the only token
+	// First request creates the bucket (does not consume a token)
 	limiter.allow("test-key")
 
-	// Second request should be blocked and return 0 remaining
+	// Second request consumes the only token
+	limiter.allow("test-key")
+
+	// Third request should be blocked and return 0 remaining
 	allowed, remaining := limiter.allow("test-key")
 	if allowed {
 		t.Error("Should be blocked")

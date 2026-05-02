@@ -27,7 +27,7 @@ func CORS(config CORSConfig) Middleware {
 			// Check if origin is allowed
 			allowed := false
 			for _, o := range config.Origins {
-				if o == "*" || o == origin {
+				if (o == "*" && !config.Credentials) || o == origin {
 					allowed = true
 					break
 				}

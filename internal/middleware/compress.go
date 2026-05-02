@@ -42,6 +42,28 @@ func (w *gzipResponseWriter) init() {
 	}
 }
 
+var compressibleTypes = map[string]bool{
+	"text/":                       true,
+	"application/json":            true,
+	"application/javascript":      true,
+	"application/xml":             true,
+	"application/svg":             true,
+	"application/x-www-form-urlencoded": true,
+}
+
+func isCompressible(contentType string) bool {
+	if contentType == "" {
+		return true // default to compressing if unknown
+	}
+	ct := strings.ToLower(contentType)
+	for prefix := range compressibleTypes {
+		if strings.HasPrefix(ct, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func (w *gzipResponseWriter) WriteHeader(statusCode int) {
 	if w.wroteHeader {
 		return
@@ -52,11 +74,30 @@ func (w *gzipResponseWriter) WriteHeader(statusCode int) {
 		w.ResponseWriter.WriteHeader(statusCode)
 		return
 	}
+	// Check if content type is compressible
+	if !isCompressible(w.ResponseWriter.Header().Get("Content-Type")) {
+		w.ResponseWriter.WriteHeader(statusCode)
+		return
+	}
 	w.init()
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
 func (w *gzipResponseWriter) Write(b []byte) (int, error) {
-	w.init()
+	if !w.wroteHeader {
+		w.WriteHeader(http.StatusOK)
+	}
+	if w.writer == nil {
+		return w.ResponseWriter.Write(b)
+	}
 	return w.writer.Write(b)
+}
+
+func (w *gzipResponseWriter) Flush() {
+	if w.writer != nil {
+		w.writer.Flush()
+	}
+	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }

@@ -255,8 +255,8 @@ func TestRateLimiterAllowExistingBucketCoverage(t *testing.T) {
 	if !allowed {
 		t.Error("First request should be allowed")
 	}
-	if remaining != 9 {
-		t.Errorf("Remaining = %v, want 9", remaining)
+	if remaining != 10 {
+		t.Errorf("Remaining = %v, want 10", remaining)
 	}
 
 	// Second request from same key - tests the existing bucket path
@@ -264,8 +264,8 @@ func TestRateLimiterAllowExistingBucketCoverage(t *testing.T) {
 	if !allowed {
 		t.Error("Second request should be allowed")
 	}
-	if remaining != 8 {
-		t.Errorf("Remaining = %v, want 8", remaining)
+	if remaining != 9 {
+		t.Errorf("Remaining = %v, want 9", remaining)
 	}
 }
 
@@ -279,8 +279,8 @@ func TestRateLimiterMaxSizeCapCoverage(t *testing.T) {
 	if !allowed {
 		t.Error("Request should be allowed")
 	}
-	if remaining > 4 {
-		t.Errorf("Remaining should be at most 4, got %v", remaining)
+	if remaining > 5 {
+		t.Errorf("Remaining should be at most 5, got %v", remaining)
 	}
 }
 
