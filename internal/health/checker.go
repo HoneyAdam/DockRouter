@@ -123,6 +123,11 @@ func (c *Checker) checkOne(target string, check *HealthCheck) {
 		check.ConsecPass = 0
 		check.ConsecFail++
 
+		// Ensure minimum threshold
+		if check.Threshold <= 0 {
+			check.Threshold = 3
+		}
+
 		// Degradation logic
 		if check.ConsecFail >= check.Threshold {
 			check.State = StateUnhealthy

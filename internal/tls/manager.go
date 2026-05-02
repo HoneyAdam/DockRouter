@@ -419,7 +419,7 @@ func (m *Manager) ListCertificates() []string {
 func (m *Manager) GetTLSConfig() *tls.Config {
 	return &tls.Config{
 		GetCertificate: m.GetCertificate,
-		MinVersion:     tls.VersionTLS12,
+		MinVersion:     tls.VersionTLS13,
 		CipherSuites: []uint16{
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
@@ -483,13 +483,19 @@ func (m *Manager) SaveAccountKey() error {
 	}
 
 	path := m.store.dataDir + "/accounts/account.key"
-	os.MkdirAll(m.store.dataDir+"/accounts", 0700)
+	if err := os.MkdirAll(m.store.dataDir+"/accounts", 0700); err != nil {
+		return err
+	}
 
 	return os.WriteFile(path, keyDER, 0600)
 }
 
 // LoadAccountKey loads the ACME account key
 func (m *Manager) LoadAccountKey() error {
+	if m.acme == nil {
+		return nil
+	}
+
 	path := m.store.dataDir + "/accounts/account.key"
 	data, err := os.ReadFile(path)
 	if err != nil {

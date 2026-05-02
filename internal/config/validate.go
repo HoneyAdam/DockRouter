@@ -35,7 +35,10 @@ func (c *Config) Validate() error {
 
 	// Validate admin bind address
 	if c.Admin {
-		if c.AdminBind != "" && c.AdminBind != "0.0.0.0" && net.ParseIP(c.AdminBind) == nil {
+		if c.AdminBind == "" {
+			c.AdminBind = "127.0.0.1"
+		}
+		if c.AdminBind != "0.0.0.0" && net.ParseIP(c.AdminBind) == nil {
 			errs = append(errs, fmt.Errorf("invalid admin bind address: %s", c.AdminBind))
 		}
 	}

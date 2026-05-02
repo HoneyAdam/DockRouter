@@ -42,8 +42,14 @@ func (c *Collector) PrometheusFormat(w io.Writer) {
 }
 
 func sanitizeName(name string) string {
-	// Replace invalid characters
-	name = strings.ReplaceAll(name, "-", "_")
-	name = strings.ReplaceAll(name, ".", "_")
-	return "dockrouter_" + name
+	var b strings.Builder
+	b.WriteString("dockrouter_")
+	for _, c := range name {
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' {
+			b.WriteRune(c)
+		} else {
+			b.WriteRune('_')
+		}
+	}
+	return b.String()
 }

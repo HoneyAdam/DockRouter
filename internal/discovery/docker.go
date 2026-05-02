@@ -70,8 +70,8 @@ func (c *DockerClient) doRequest(ctx context.Context, method, path string) ([]by
 	}
 
 	// Build HTTP request
-	url := fmt.Sprintf("http://localhost/%s%s", DockerAPIVersion, path)
-	req, err := http.NewRequest(method, url, nil)
+	reqURL := fmt.Sprintf("http://localhost/%s%s", DockerAPIVersion, path)
+	req, err := http.NewRequest(method, reqURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -113,8 +113,8 @@ func (c *DockerClient) doStreamRequest(ctx context.Context, method, path string)
 	}
 
 	// Build HTTP request
-	url := fmt.Sprintf("http://localhost/%s%s", DockerAPIVersion, path)
-	req, err := http.NewRequest(method, url, nil)
+	reqURL := fmt.Sprintf("http://localhost/%s%s", DockerAPIVersion, path)
+	req, err := http.NewRequest(method, reqURL, nil)
 	if err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("failed to create request: %w", err)

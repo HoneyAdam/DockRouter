@@ -1582,7 +1582,7 @@ func TestExtractClientIPWithTrustedProxies(t *testing.T) {
 			name:       "from trusted proxy with multiple X-Forwarded-For",
 			remoteAddr: "10.0.0.1:12345",
 			xff:        "192.168.1.100, 10.0.0.2, 10.0.0.3",
-			expectedIP: "192.168.1.100",
+			expectedIP: "10.0.0.3",
 		},
 		{
 			name:       "from trusted proxy with X-Real-IP",

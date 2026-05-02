@@ -41,7 +41,7 @@ func (l Level) String() string {
 type Logger struct {
 	mu     *sync.Mutex
 	w      io.Writer
-	level  Level
+	level  *Level
 	fields map[string]interface{}
 }
 
@@ -53,7 +53,7 @@ func NewLogger(w io.Writer, level Level) *Logger {
 	return &Logger{
 		mu:     &sync.Mutex{},
 		w:      w,
-		level:  level,
+		level:  &level,
 		fields: make(map[string]interface{}),
 	}
 }
@@ -80,7 +80,7 @@ func (e logEntry) MarshalJSON() ([]byte, error) {
 
 // log writes a log entry
 func (l *Logger) log(level Level, msg string, fields ...interface{}) {
-	if level < l.level {
+	if level < *l.level {
 		return
 	}
 
@@ -115,8 +115,13 @@ func (l *Logger) log(level Level, msg string, fields ...interface{}) {
 		}
 	}
 
-	data, _ := json.Marshal(entry)
-	l.w.Write(data)
+	data, err := json.Marshal(entry)
+	if err != nil {
+		return
+	}
+	if _, err := l.w.Write(data); err != nil {
+		return
+	}
 	l.w.Write([]byte("\n"))
 }
 

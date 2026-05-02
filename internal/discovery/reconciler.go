@@ -11,11 +11,12 @@ import (
 
 // Engine orchestrates container discovery
 type Engine struct {
-	client *DockerClient
-	events *EventStream
-	poller *Poller
-	routes RouteSink
-	logger Logger
+	client   *DockerClient
+	events   *EventStream
+	poller   *Poller
+	routes   RouteSink
+	logger   Logger
+	interval time.Duration
 
 	mu         sync.RWMutex
 	containers map[string]*ContainerInfo
@@ -58,6 +59,7 @@ func NewEngine(client *DockerClient, routes RouteSink, logger Logger) *Engine {
 		routes:     routes,
 		containers: make(map[string]*ContainerInfo),
 		logger:     logger,
+		interval:   30 * time.Second,
 	}
 }
 
@@ -207,6 +209,9 @@ func (e *Engine) buildContainerInfo(c Container, detail *ContainerDetail, config
 
 // Changed checks if container info has changed
 func (ci *ContainerInfo) Changed(other *ContainerInfo) bool {
+	if ci.Config == nil || other.Config == nil {
+		return ci.Config != other.Config
+	}
 	return ci.Address != other.Address ||
 		ci.Healthy != other.Healthy ||
 		ci.Config.Host != other.Config.Host ||
@@ -215,11 +220,6 @@ func (ci *ContainerInfo) Changed(other *ContainerInfo) bool {
 
 // watchEvents watches Docker events for container changes
 func (e *Engine) watchEvents(ctx context.Context) {
-	defer func() {
-		e.mu.Lock()
-		e.running = false
-		e.mu.Unlock()
-	}()
 	for {
 		select {
 		case <-ctx.Done():
@@ -348,7 +348,11 @@ func (e *Engine) onContainerStop(id string) {
 
 // pollLoop periodically polls for containers as fallback
 func (e *Engine) pollLoop(ctx context.Context) {
-	ticker := time.NewTicker(30 * time.Second)
+	interval := e.interval
+	if interval <= 0 {
+		interval = 30 * time.Second
+	}
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {

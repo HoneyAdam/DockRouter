@@ -140,8 +140,8 @@ func TestManagerGetTLSConfig(t *testing.T) {
 	if config.GetCertificate == nil {
 		t.Error("GetCertificate should not be nil")
 	}
-	if config.MinVersion != tls.VersionTLS12 {
-		t.Errorf("MinVersion = %d, want %d", config.MinVersion, tls.VersionTLS12)
+	if config.MinVersion != tls.VersionTLS13 {
+		t.Errorf("MinVersion = %d, want %d", config.MinVersion, tls.VersionTLS13)
 	}
 	if len(config.CipherSuites) == 0 {
 		t.Error("CipherSuites should not be empty")

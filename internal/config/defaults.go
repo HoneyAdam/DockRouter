@@ -57,14 +57,13 @@ func (c *Config) applyDefaults() {
 
 // GetACMEDirectoryURL returns the ACME directory URL based on provider and staging settings
 func (c *Config) GetACMEDirectoryURL() string {
-	if c.ACMEStaging {
-		return ACMELetsEncryptStaging
-	}
-
 	switch c.ACMEProvider {
 	case "zerossl":
 		return ACMEZeroSSL
 	default:
+		if c.ACMEStaging {
+			return ACMELetsEncryptStaging
+		}
 		return ACMELetsEncryptProd
 	}
 }

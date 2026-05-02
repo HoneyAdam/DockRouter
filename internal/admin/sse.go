@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sync"
+	"sync/atomic"
 )
 
 // SSEHub manages Server-Sent Events connections
@@ -15,6 +16,7 @@ type SSEHub struct {
 	register   chan *sseClient
 	unregister chan *sseClient
 	done       chan struct{}
+	dropped    atomic.Int64
 }
 
 type sseClient struct {
@@ -65,6 +67,7 @@ func (h *SSEHub) Run() {
 				case client.ch <- event:
 				default:
 					// Client too slow, drop event
+					h.dropped.Add(1)
 				}
 			}
 			h.mu.RUnlock()
@@ -92,6 +95,7 @@ func (h *SSEHub) Send(event Event) {
 	case h.broadcast <- event:
 	default:
 		// Broadcast channel full, drop event
+		h.dropped.Add(1)
 	}
 }
 

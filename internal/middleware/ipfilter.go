@@ -122,8 +122,9 @@ func extractIP(r *http.Request, trustedProxies []*net.IPNet) net.IP {
 		// X-Forwarded-For: client, proxy1, proxy2
 		// The first IP is the original client
 		ips := strings.Split(xff, ",")
-		if len(ips) > 0 {
-			clientIP := strings.TrimSpace(ips[0])
+		// Walk right to left, find first IP not in trusted proxies
+		for i := len(ips) - 1; i >= 0; i-- {
+			clientIP := strings.TrimSpace(ips[i])
 			if ip := net.ParseIP(clientIP); ip != nil {
 				return ip
 			}

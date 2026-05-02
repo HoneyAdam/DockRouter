@@ -3,8 +3,10 @@ package health
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -26,8 +28,17 @@ func HTTPCheck(target, path string, timeout time.Duration) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	url := "http://" + target + path
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	rawURL := "http://" + target + path
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return false, fmt.Errorf("invalid health check URL: %w", err)
+	}
+	// Ensure scheme is http (prevent SSRF via other schemes)
+	if parsedURL.Scheme != "http" {
+		return false, fmt.Errorf("invalid health check URL scheme: %s", parsedURL.Scheme)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsedURL.String(), nil)
 	if err != nil {
 		return false, err
 	}

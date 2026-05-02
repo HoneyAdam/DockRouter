@@ -2,12 +2,16 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var errHelpRequested = errors.New("help requested")
+var errVersionRequested = errors.New("version requested")
 
 // Config holds all DockRouter configuration
 type Config struct {
@@ -70,6 +74,9 @@ func Load(version, buildTime string) (*Config, error) {
 
 	// Parse command-line flags
 	if err := cfg.parseFlags(); err != nil {
+		if errors.Is(err, errHelpRequested) || errors.Is(err, errVersionRequested) {
+			os.Exit(0)
+		}
 		return nil, err
 	}
 
@@ -119,12 +126,12 @@ func (c *Config) parseFlags() error {
 		fmt.Println("Usage: dockrouter [options]")
 		fmt.Println()
 		fs.PrintDefaults()
-		os.Exit(0)
+		return errHelpRequested
 	}
 
 	if fs.Bool("version") {
 		fmt.Printf("DockRouter %s (built %s)\n", c.Version, c.BuildTime)
-		os.Exit(0)
+		return errVersionRequested
 	}
 
 	return nil

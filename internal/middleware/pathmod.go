@@ -3,6 +3,7 @@ package middleware
 
 import (
 	"net/http"
+	"path"
 	"strings"
 )
 
@@ -23,6 +24,10 @@ func StripPrefix(prefix string) Middleware {
 			if r.URL.Path == "" {
 				r.URL.Path = "/"
 			}
+			r.URL.Path = path.Clean(r.URL.Path)
+			if r.URL.RawPath != "" {
+				r.URL.RawPath = path.Clean(r.URL.RawPath)
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -33,6 +38,9 @@ func AddPrefix(prefix string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r.URL.Path = prefix + r.URL.Path
+			if r.URL.RawPath != "" {
+				r.URL.RawPath = prefix + r.URL.RawPath
+			}
 			next.ServeHTTP(w, r)
 		})
 	}

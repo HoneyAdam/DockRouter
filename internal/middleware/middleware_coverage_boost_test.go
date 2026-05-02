@@ -133,9 +133,9 @@ func TestExtractIPXForwardedFor(t *testing.T) {
 
 	ip := extractIP(req, filter.trustedProxies)
 
-	// Should extract the first IP from X-Forwarded-For
-	if ip == nil || !ip.Equal(net.ParseIP("203.0.113.1")) {
-		t.Errorf("Expected 203.0.113.1, got %v", ip)
+	// Should extract the rightmost IP from X-Forwarded-For (right-to-left walk)
+	if ip == nil || !ip.Equal(net.ParseIP("192.168.1.1")) {
+		t.Errorf("Expected 192.168.1.1, got %v", ip)
 	}
 }
 

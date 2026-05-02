@@ -54,8 +54,15 @@ func NewCollector() *Collector {
 
 // Counter gets or creates a counter
 func (c *Collector) Counter(name string) *Counter {
+	c.mu.RLock()
+	if counter, ok := c.counters[name]; ok {
+		c.mu.RUnlock()
+		return counter
+	}
+	c.mu.RUnlock()
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	// Double-check after acquiring write lock
 	if counter, ok := c.counters[name]; ok {
 		return counter
 	}
@@ -76,8 +83,15 @@ func (c *Counter) Value() uint64 {
 
 // Gauge gets or creates a gauge
 func (c *Collector) Gauge(name string) *Gauge {
+	c.mu.RLock()
+	if gauge, ok := c.gauges[name]; ok {
+		c.mu.RUnlock()
+		return gauge
+	}
+	c.mu.RUnlock()
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	// Double-check after acquiring write lock
 	if gauge, ok := c.gauges[name]; ok {
 		return gauge
 	}
@@ -120,8 +134,15 @@ func (g *Gauge) Dec() {
 
 // Histogram gets or creates a histogram
 func (c *Collector) Histogram(name string) *Histogram {
+	c.mu.RLock()
+	if hist, ok := c.histograms[name]; ok {
+		c.mu.RUnlock()
+		return hist
+	}
+	c.mu.RUnlock()
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	// Double-check after acquiring write lock
 	if hist, ok := c.histograms[name]; ok {
 		return hist
 	}
