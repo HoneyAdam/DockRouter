@@ -314,20 +314,32 @@ func (c *DockerClient) EventsStream(ctx context.Context, filters map[string]stri
 		defer stream.Close()
 
 		decoder := json.NewDecoder(stream)
+		type decodeResult struct {
+			event Event
+			err   error
+		}
+
 		for {
+			// Decode in a separate goroutine so we can select on context
+			decodeCh := make(chan decodeResult, 1)
+			go func() {
+				var event Event
+				err := decoder.Decode(&event)
+				decodeCh <- decodeResult{event, err}
+			}()
+
 			select {
 			case <-ctx.Done():
 				return
-			default:
-				var event Event
-				if err := decoder.Decode(&event); err != nil {
-					if err == io.EOF || strings.Contains(err.Error(), "closed") {
+			case result := <-decodeCh:
+				if result.err != nil {
+					if result.err == io.EOF || strings.Contains(result.err.Error(), "closed") {
 						return
 					}
 					continue
 				}
 				select {
-				case events <- event:
+				case events <- result.event:
 				case <-ctx.Done():
 					return
 				}

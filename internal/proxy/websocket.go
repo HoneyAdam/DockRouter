@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -75,9 +76,18 @@ func (wp *WebSocketProxy) ServeHTTP(w http.ResponseWriter, r *http.Request, targ
 		return err
 	}
 
-	// Copy data bidirectionally
-	go wp.copyData(clientConn, backendConn, "backend->client")
-	wp.copyData(backendConn, clientBuf, "client->backend")
+	// Copy data bidirectionally, waiting for both directions to complete
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		wp.copyData(clientConn, backendConn, "backend->client")
+	}()
+	go func() {
+		defer wg.Done()
+		wp.copyData(backendConn, clientBuf, "client->backend")
+	}()
+	wg.Wait()
 
 	return nil
 }
@@ -116,12 +126,29 @@ func (wp *WebSocketProxy) sendUpgradeRequest(conn net.Conn, r *http.Request, tar
 }
 
 func (wp *WebSocketProxy) readBackendResponse(conn net.Conn) (string, error) {
-	buf := make([]byte, 4096)
-	n, err := conn.Read(buf)
-	if err != nil {
-		return "", err
+	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	defer conn.SetDeadline(time.Time{})
+
+	reader := bufio.NewReaderSize(conn, 4096)
+	var resp strings.Builder
+
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			return "", fmt.Errorf("failed to read backend response: %w", err)
+		}
+		resp.WriteString(line)
+		if strings.TrimSpace(line) == "" {
+			break
+		}
 	}
-	return string(buf[:n]), nil
+
+	response := resp.String()
+	if !strings.HasPrefix(response, "HTTP/1.1 101") && !strings.HasPrefix(response, "HTTP/1.0 101") {
+		return "", fmt.Errorf("backend refused WebSocket upgrade: %s", strings.Split(response, "\r\n")[0])
+	}
+
+	return response, nil
 }
 
 func (wp *WebSocketProxy) sendClientResponse(conn net.Conn, resp string) error {

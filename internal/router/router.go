@@ -4,6 +4,8 @@ package router
 import (
 	"html"
 	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"strings"
 )
 
@@ -97,7 +99,10 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	chain.ServeHTTP(w, req)
 }
 
-// createProxyHandler creates a handler that proxies to backends with retry logic
+// createProxyHandler creates a handler that proxies to backends with retry logic.
+// Each attempt is buffered via httptest.NewRecorder so that a failed proxy call
+// does not consume the real ResponseWriter, allowing genuine failover to the
+// next backend.
 func (r *Router) createProxyHandler(route *Route, host, path string, maxRetries int) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// Try backends with retry logic
@@ -128,13 +133,24 @@ func (r *Router) createProxyHandler(route *Route, host, path string, maxRetries 
 				"attempt", attempt+1,
 			)
 
-			// Proxy the request
-			err := r.proxy.ServeHTTP(w, req, backend.Address)
+			// Buffer the response so the real writer stays clean on failure
+			rec := httptest.NewRecorder()
+
+			// Proxy the request into the recorder
+			err := r.proxy.ServeHTTP(rec, req, backend.Address)
 
 			// Decrement active connections
 			route.Backend.CompleteRequest(backend.Address)
 
 			if err == nil {
+				// Success: flush buffered response to the real writer
+				for k, vv := range rec.Header() {
+					for _, v := range vv {
+						w.Header().Add(k, v)
+					}
+				}
+				w.WriteHeader(rec.Code)
+				rec.Body.WriteTo(w)
 				return
 			}
 
@@ -147,15 +163,10 @@ func (r *Router) createProxyHandler(route *Route, host, path string, maxRetries 
 			)
 			route.Backend.RecordFailure(backend.Address)
 			route.Backend.MarkUnhealthy(backend.Address)
-
-			// The proxy's error handler already wrote the error response
-			// to the ResponseWriter, so we cannot retry with the same writer.
-			// Log the failure and return -- the client already received
-			// the error page from the first failed attempt.
-			return
+			// Continue to next backend attempt
 		}
 
-		// No backends were available to try
+		// No backends were available to try (all attempts failed)
 		r.handleNoBackend(w, req, route)
 	})
 }
@@ -209,7 +220,7 @@ func buildErrorPage(code int, title, message, requestID string) string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>` + intToStr(code) + ` ` + safeTitle + `</title>
+    <title>` + strconv.Itoa(code) + ` ` + safeTitle + `</title>
     <style>
         body { background: #0F172A; color: #F1F5F9; font-family: system-ui; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
         .container { text-align: center; }
@@ -220,7 +231,7 @@ func buildErrorPage(code int, title, message, requestID string) string {
 </head>
 <body>
     <div class="container">
-        <div class="code">` + intToStr(code) + `</div>
+        <div class="code">` + strconv.Itoa(code) + `</div>
         <div class="message">` + safeTitle + `</div>
         <div class="message">` + safeMessage + `</div>
         ` + func() string {
@@ -234,22 +245,3 @@ func buildErrorPage(code int, title, message, requestID string) string {
 </html>`
 }
 
-func intToStr(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	neg := false
-	if n < 0 {
-		neg = true
-		n = -n
-	}
-	var s []byte
-	for n > 0 {
-		s = append([]byte{byte('0' + n%10)}, s...)
-		n /= 10
-	}
-	if neg {
-		s = append([]byte{'-'}, s...)
-	}
-	return string(s)
-}

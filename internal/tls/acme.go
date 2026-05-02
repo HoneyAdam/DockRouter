@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -32,6 +33,7 @@ type ACMEClient struct {
 	privateKey   *ecdsa.PrivateKey
 	accountURL   string
 	nonce        string
+	mu           sync.Mutex
 
 	// Directory endpoints
 	newNonceURL   string
@@ -169,7 +171,9 @@ func (c *ACMEClient) fetchNonce() error {
 	}
 	defer resp.Body.Close()
 
+	c.mu.Lock()
 	c.nonce = resp.Header.Get("Replay-Nonce")
+	c.mu.Unlock()
 	return nil
 }
 
@@ -262,11 +266,6 @@ func (c *ACMEClient) TriggerChallenge(url string) (*Challenge, error) {
 	var ch Challenge
 	if err := json.NewDecoder(resp.Body).Decode(&ch); err != nil {
 		return nil, err
-	}
-
-	// Update nonce
-	if nonce := resp.Header.Get("Replay-Nonce"); nonce != "" {
-		c.nonce = nonce
 	}
 
 	return &ch, nil
@@ -370,7 +369,9 @@ func (c *ACMEClient) signedPost(url string, payload interface{}) (*http.Response
 
 	// Update nonce from response
 	if nonce := resp.Header.Get("Replay-Nonce"); nonce != "" {
+		c.mu.Lock()
 		c.nonce = nonce
+		c.mu.Unlock()
 	}
 
 	return resp, nil
@@ -389,11 +390,16 @@ func (c *ACMEClient) signPayload(payload interface{}, url string) (map[string]in
 	}
 	encodedPayload := base64URLEncode(payloadBytes)
 
+	// Read nonce under lock
+	c.mu.Lock()
+	nonce := c.nonce
+	c.mu.Unlock()
+
 	// Create protected header
 	protected := map[string]interface{}{
 		"alg":   "ES256",
 		"url":   url,
-		"nonce": c.nonce,
+		"nonce": nonce,
 	}
 
 	if c.accountURL != "" {

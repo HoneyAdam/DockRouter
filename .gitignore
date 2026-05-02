@@ -91,3 +91,4 @@ cover
 node_modules/
 .playwright-mcp/*
 .playwright-mcp/
+.dfmt/

@@ -96,7 +96,7 @@ func (m *Manager) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, 
 		}
 	}
 
-	// Try to provision on-demand (deduplicate concurrent requests for same domain)
+	// Trigger async provisioning (deduplicate concurrent requests for same domain)
 	if _, alreadyProvisioning := m.provisioning.LoadOrStore(domain, struct{}{}); !alreadyProvisioning {
 		go func() {
 			defer m.provisioning.Delete(domain)
@@ -109,7 +109,13 @@ func (m *Manager) GetCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, 
 		}()
 	}
 
-	return nil, fmt.Errorf("certificate not found for %s", domain)
+	// Return self-signed fallback so the TLS handshake succeeds while provisioning
+	m.logger.Info("Using self-signed fallback certificate", "domain", domain)
+	fallback, err := GenerateSelfSigned(domain)
+	if err != nil {
+		return nil, fmt.Errorf("certificate not found for %s and fallback generation failed: %w", domain, err)
+	}
+	return fallback, nil
 }
 
 // EnsureCertificate provisions a certificate for a domain if needed

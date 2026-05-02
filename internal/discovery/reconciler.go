@@ -314,9 +314,8 @@ func (e *Engine) onContainerStart(ctx context.Context, id string) {
 
 	e.mu.Lock()
 	e.containers[id] = info
-	e.mu.Unlock()
-
 	e.routes.AddRoute(info)
+	e.mu.Unlock()
 
 	e.logger.Info("Route added",
 		"container", info.Name,
@@ -332,11 +331,11 @@ func (e *Engine) onContainerStop(id string) {
 	info, exists := e.containers[id]
 	if exists {
 		delete(e.containers, id)
+		e.routes.RemoveRoute(id)
 	}
 	e.mu.Unlock()
 
 	if exists {
-		e.routes.RemoveRoute(id)
 		e.logger.Info("Route removed",
 			"container", info.Name,
 			"host", info.Config.Host,

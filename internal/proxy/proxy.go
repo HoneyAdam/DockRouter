@@ -4,6 +4,7 @@ package proxy
 import (
 	"fmt"
 	"html"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -13,9 +14,10 @@ import (
 
 // Proxy handles reverse proxying to backend containers
 type Proxy struct {
-	transport  http.RoundTripper
-	bufferPool *bufferPool
-	logger     Logger
+	transport      http.RoundTripper
+	bufferPool     *bufferPool
+	logger         Logger
+	websocketProxy *WebSocketProxy
 }
 
 // Logger interface for proxy
@@ -28,11 +30,13 @@ type Logger interface {
 
 // NewProxy creates a new reverse proxy
 func NewProxy(logger Logger) *Proxy {
-	return &Proxy{
+	p := &Proxy{
 		transport:  newTransport(),
 		bufferPool: newBufferPool(),
 		logger:     logger,
 	}
+	p.websocketProxy = NewWebSocketProxy(logger)
+	return p
 }
 
 // ServeHTTP proxies the request to the target backend
@@ -41,6 +45,11 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, target string)
 	targetURL, err := url.Parse("http://" + target)
 	if err != nil {
 		return fmt.Errorf("invalid target URL: %w", err)
+	}
+
+	// Route WebSocket requests through WebSocketProxy
+	if IsWebSocketRequest(r) {
+		return p.websocketProxy.ServeHTTP(w, r, target)
 	}
 
 	// Create reverse proxy
@@ -62,12 +71,6 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, target string)
 
 		// Set X-Forwarded headers
 		p.setForwardedHeaders(req, r)
-
-		// Handle WebSocket upgrade
-		if IsWebSocketRequest(req) {
-			req.Header.Set("Connection", "Upgrade")
-			req.Header.Set("Upgrade", "websocket")
-		}
 	}
 
 	// Modify response to capture status
@@ -90,20 +93,12 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, target string)
 func (p *Proxy) setForwardedHeaders(req *http.Request, original *http.Request) {
 	// Get client IP from RemoteAddr
 	clientIP := original.RemoteAddr
-	if idx := strings.LastIndex(clientIP, ":"); idx != -1 {
-		clientIP = clientIP[:idx]
+	if host, _, err := net.SplitHostPort(clientIP); err == nil {
+		clientIP = host
 	}
-	// Remove brackets from IPv6
-	clientIP = strings.Trim(clientIP, "[]")
 
-	// X-Forwarded-For
-	xff := original.Header.Get("X-Forwarded-For")
-	if xff != "" {
-		xff = xff + ", " + clientIP
-	} else {
-		xff = clientIP
-	}
-	req.Header.Set("X-Forwarded-For", xff)
+	// X-Forwarded-For - always overwrite with real client IP to prevent injection
+	req.Header.Set("X-Forwarded-For", clientIP)
 
 	// X-Forwarded-Proto
 	if original.TLS != nil {
