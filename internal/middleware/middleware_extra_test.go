@@ -344,7 +344,7 @@ func TestRedirectHTTPSWithHeaders(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	redirectHandler := RedirectHTTPS(handler)
+	redirectHandler := RedirectHTTPS(nil)(handler)
 
 	// Request without TLS should redirect
 	req := httptest.NewRequest("GET", "/path?query=1", nil)
@@ -536,7 +536,7 @@ func TestRedirectHTTPSDifferentPorts(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	redirectHandler := RedirectHTTPS(handler)
+	redirectHandler := RedirectHTTPS(nil)(handler)
 
 	tests := []struct {
 		host     string
@@ -1172,7 +1172,7 @@ func TestRedirectHTTPSSkipWithXForwardedProto(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	redirectHandler := RedirectHTTPS(handler)
+	redirectHandler := RedirectHTTPS(nil)(handler)
 
 	// Request with X-Forwarded-Proto: https should not redirect
 	req := httptest.NewRequest("GET", "/path", nil)
@@ -1192,7 +1192,7 @@ func TestRedirectHTTPSSkipWithURLScheme(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	redirectHandler := RedirectHTTPS(handler)
+	redirectHandler := RedirectHTTPS(nil)(handler)
 
 	// Request with r.URL.Scheme = https should not redirect
 	req := httptest.NewRequest("GET", "/path", nil)
@@ -1213,7 +1213,7 @@ func TestRedirectHTTPSWithQuery(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	redirectHandler := RedirectHTTPS(handler)
+	redirectHandler := RedirectHTTPS(nil)(handler)
 
 	req := httptest.NewRequest("GET", "/path?foo=bar&baz=qux", nil)
 	req.Host = "example.com"

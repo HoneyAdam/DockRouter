@@ -178,10 +178,14 @@ func TestBuildHTTPHandlerHTTPSRedirect(t *testing.T) {
 	logger := log.NewLogger(nil, log.LevelInfo)
 	challengeSolver := tlspkg.NewChallengeSolver()
 
+	routeTable := router.NewTable()
+	routeTable.Add(&router.Route{Host: "example.com", PathPrefix: "/", ContainerID: "test", ContainerName: "test"})
+
 	app := &App{
 		logger:          logger,
 		config:          &config.Config{DefaultTLS: "auto"},
 		challengeSolver: challengeSolver,
+		routeTable:      routeTable,
 	}
 
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -206,10 +210,14 @@ func TestBuildHTTPHandlerRedirectWithQuery(t *testing.T) {
 	logger := log.NewLogger(nil, log.LevelInfo)
 	challengeSolver := tlspkg.NewChallengeSolver()
 
+	routeTable := router.NewTable()
+	routeTable.Add(&router.Route{Host: "example.com", PathPrefix: "/", ContainerID: "test", ContainerName: "test"})
+
 	app := &App{
 		logger:          logger,
 		config:          &config.Config{DefaultTLS: "auto"},
 		challengeSolver: challengeSolver,
+		routeTable:      routeTable,
 	}
 
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})

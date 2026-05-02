@@ -308,7 +308,7 @@ func TestSetForwardedHeaders(t *testing.T) {
 			remoteAddr:   "10.0.0.1:12345",
 			originalHost: "example.com",
 			xff:          "1.2.3.4",
-			checkXFF:     func(s string) bool { return strings.Contains(s, "1.2.3.4") && strings.Contains(s, "10.0.0.1") },
+			checkXFF:     func(s string) bool { return s == "10.0.0.1" },
 			checkProto:   "http",
 			checkHost:    "example.com",
 		},

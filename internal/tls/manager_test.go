@@ -355,11 +355,14 @@ func TestManagerGetCertificate(t *testing.T) {
 		t.Error("GetCertificate should return error for empty ServerName")
 	}
 
-	// Test with valid ServerName but no certificate
+	// Test with valid ServerName but no certificate - returns self-signed fallback
 	hello = &tls.ClientHelloInfo{ServerName: "nonexistent.com"}
-	_, err = manager.GetCertificate(hello)
-	if err == nil {
-		t.Error("GetCertificate should return error for non-existent cert")
+	cert, err := manager.GetCertificate(hello)
+	if err != nil {
+		t.Errorf("GetCertificate should return self-signed fallback, got error: %v", err)
+	}
+	if cert == nil {
+		t.Error("GetCertificate should return fallback cert for non-existent domain")
 	}
 
 	// Add a certificate and test retrieval
@@ -385,7 +388,7 @@ func TestManagerGetCertificate(t *testing.T) {
 	manager.mu.Unlock()
 
 	hello = &tls.ClientHelloInfo{ServerName: "example.com"}
-	cert, err := manager.GetCertificate(hello)
+	cert, err = manager.GetCertificate(hello)
 	if err != nil {
 		t.Errorf("GetCertificate failed: %v", err)
 	}

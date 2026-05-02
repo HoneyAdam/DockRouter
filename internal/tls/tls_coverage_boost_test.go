@@ -727,12 +727,12 @@ func TestManagerGetCertificateNotFound(t *testing.T) {
 	hello := &tls.ClientHelloInfo{ServerName: "nonexistent.com"}
 	cert, err := manager.GetCertificate(hello)
 
-	// Should return error since cert doesn't exist and no ACME
-	if err == nil {
-		t.Error("GetCertificate should error for non-existent domain without ACME")
+	// Should return self-signed fallback cert (not an error)
+	if err != nil {
+		t.Errorf("GetCertificate should return self-signed fallback, got error: %v", err)
 	}
-	if cert != nil {
-		t.Error("Certificate should be nil on error")
+	if cert == nil {
+		t.Error("Certificate should not be nil (self-signed fallback expected)")
 	}
 }
 

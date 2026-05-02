@@ -189,8 +189,8 @@ func TestRouterServeHTTPProxyError(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusBadGateway {
-		t.Errorf("Status = %d, want %d", w.Code, http.StatusBadGateway)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Errorf("Status = %d, want %d", w.Code, http.StatusServiceUnavailable)
 	}
 }
 

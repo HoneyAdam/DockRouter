@@ -178,7 +178,7 @@ func TestRedirectHTTPS(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	redirectHandler := RedirectHTTPS(handler)
+	redirectHandler := RedirectHTTPS(nil)(handler)
 
 	t.Run("redirects http", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/path?query=1", nil)

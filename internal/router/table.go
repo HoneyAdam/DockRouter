@@ -236,9 +236,8 @@ func wildcardMatch(pattern, host string) bool {
 		return true
 	}
 
-	// Subdomain match: host must end with suffix AND the character before
-	// the suffix must be a dot, preventing evil-example.com from matching *.example.com
-	if strings.HasSuffix(host, suffix) && len(host) > len(suffix) && host[len(host)-len(suffix)-1] == '.' {
+	// Subdomain match: suffix starts with "." so HasSuffix ensures dot boundary
+	if strings.HasSuffix(host, suffix) && len(host) > len(suffix) {
 		return true
 	}
 

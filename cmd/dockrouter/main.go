@@ -340,7 +340,7 @@ func (a *App) buildHTTPHandler(handler http.Handler) http.Handler {
 				if err != nil {
 					host = r.Host
 				}
-				if a.routeTable.Match(host, r.URL.Path) != nil {
+				if a.routeTable != nil && a.routeTable.Match(host, r.URL.Path) != nil {
 					target := fmt.Sprintf("https://%s%s", r.Host, r.URL.Path)
 					if r.URL.RawQuery != "" {
 						target += "?" + r.URL.RawQuery
