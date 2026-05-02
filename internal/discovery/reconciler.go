@@ -477,10 +477,10 @@ func (ci *ContainerInfo) deepCopy() *ContainerInfo {
 // Helper functions
 
 func extractName(names []string) string {
-	for _, name := range names {
-		return strings.TrimPrefix(name, "/")
+	if len(names) == 0 {
+		return ""
 	}
-	return ""
+	return strings.TrimPrefix(names[0], "/")
 }
 
 func extractNameFromDetail(detail *ContainerDetail) string {

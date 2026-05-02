@@ -48,6 +48,12 @@ func NewDockerClient(socketPath string) (*DockerClient, error) {
 	}, nil
 }
 
+// Close releases resources associated with the Docker client
+func (c *DockerClient) Close() error {
+	// Unix socket client uses per-request connections, no persistent resources
+	return nil
+}
+
 // SetTimeout sets the HTTP timeout
 func (c *DockerClient) SetTimeout(d time.Duration) {
 	c.timeout = d

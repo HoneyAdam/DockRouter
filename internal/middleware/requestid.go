@@ -3,8 +3,10 @@ package middleware
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"encoding/hex"
 	"net/http"
+	"time"
 )
 
 // RequestIDHeader is the header name for request IDs
@@ -27,10 +29,10 @@ func RequestID(next http.Handler) http.Handler {
 func generateID() string {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
-		// Fallback: use timestamp-based ID if crypto/rand fails
-		for i := range b {
-			b[i] = byte(i)
-		}
+		// Fallback: use timestamp + nanoseconds for uniqueness
+		now := time.Now()
+		binary.BigEndian.PutUint64(b[0:8], uint64(now.Unix()))
+		binary.BigEndian.PutUint64(b[8:16], uint64(now.Nanosecond()))
 	}
 	return hex.EncodeToString(b)
 }

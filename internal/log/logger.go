@@ -63,7 +63,7 @@ type logEntry struct {
 	Timestamp string                 `json:"ts"`
 	Level     string                 `json:"level"`
 	Message   string                 `json:"msg"`
-	Fields    map[string]interface{} `json:"-"`
+	Fields    map[string]interface{} `json:"-"` // excluded from JSON; MarshalJSON flattens into parent
 }
 
 // MarshalJSON flattens Fields into the top-level JSON object

@@ -153,7 +153,10 @@ func ParseLabels(labels map[string]string) *RouteConfig {
 	}
 
 	config := &RouteConfig{
-		RawLabels: labels,
+		RawLabels: make(map[string]string, len(labels)),
+	}
+	for k, v := range labels {
+		config.RawLabels[k] = v
 	}
 
 	// Check if enabled

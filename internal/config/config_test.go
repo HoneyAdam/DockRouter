@@ -918,7 +918,7 @@ func TestValidateACMEEmail(t *testing.T) {
 		{"empty email (ok)", "", false},
 		{"valid email", "user@example.com", false},
 		{"missing @", "invalid", true},
-		{"just @", "@", false}, // technically contains @
+		{"just @", "@", true}, // no local part or domain dot
 	}
 
 	for _, tt := range tests {

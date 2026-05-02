@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -328,7 +329,7 @@ func TestSecurityHeadersAll(t *testing.T) {
 	expectedHeaders := map[string]string{
 		"X-Content-Type-Options": "nosniff",
 		"X-Frame-Options":        "DENY",
-		"X-Xss-Protection":       "1; mode=block",
+		"Content-Security-Policy": "default-src 'self'",
 	}
 
 	for header, expected := range expectedHeaders {
@@ -491,9 +492,9 @@ func TestIntToStr(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
-			result := intToStr(tt.input)
+			result := strconv.Itoa(tt.input)
 			if result != tt.expected {
-				t.Errorf("intToStr(%d) = %s, want %s", tt.input, result, tt.expected)
+				t.Errorf("strconv.Itoa(%d) = %s, want %s", tt.input, result, tt.expected)
 			}
 		})
 	}

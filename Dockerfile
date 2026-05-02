@@ -50,7 +50,7 @@ EXPOSE 80 443 9090
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD ["/dockrouter", "healthcheck"] || exit 1
+    CMD ["/dockrouter", "healthcheck"]
 
 # Labels
 LABEL org.opencontainers.image.title="DockRouter" \

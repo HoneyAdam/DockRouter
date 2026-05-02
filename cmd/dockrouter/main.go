@@ -36,6 +36,17 @@ var (
 // healthCheckURL is the URL for health checks (can be overridden in tests)
 var healthCheckURL = "http://localhost:9090/api/v1/health"
 
+// healthCheckClient is a reusable HTTP client for health checks
+var healthCheckClient = &http.Client{
+	Timeout: 2 * time.Second,
+	Transport: &http.Transport{
+		MaxIdleConns:        1,
+		MaxIdleConnsPerHost: 1,
+		IdleConnTimeout:     30 * time.Second,
+		DisableKeepAlives:   false,
+	},
+}
+
 // Embed dashboard files
 //
 //go:embed dashboard/*
@@ -223,11 +234,12 @@ func (a *App) start(ctx context.Context) {
 
 	// Start HTTP server
 	a.httpServer = &http.Server{
-		Addr:         fmt.Sprintf(":%d", a.config.HTTPPort),
-		Handler:      httpHandler,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		Addr:            fmt.Sprintf(":%d", a.config.HTTPPort),
+		Handler:         httpHandler,
+		ReadTimeout:     30 * time.Second,
+		WriteTimeout:    30 * time.Second,
+		IdleTimeout:     120 * time.Second,
+		MaxHeaderBytes:  1 << 20, // 1MB
 	}
 
 	go func() {
@@ -240,12 +252,13 @@ func (a *App) start(ctx context.Context) {
 	// Start HTTPS server
 	if a.tlsManager != nil {
 		a.httpsServer = &http.Server{
-			Addr:         fmt.Sprintf(":%d", a.config.HTTPSPort),
-			Handler:      coreHandler,
-			TLSConfig:    a.tlsManager.GetTLSConfig(),
-			ReadTimeout:  30 * time.Second,
-			WriteTimeout: 30 * time.Second,
-			IdleTimeout:  120 * time.Second,
+			Addr:            fmt.Sprintf(":%d", a.config.HTTPSPort),
+			Handler:         coreHandler,
+			TLSConfig:       a.tlsManager.GetTLSConfig(),
+			ReadTimeout:     30 * time.Second,
+			WriteTimeout:    30 * time.Second,
+			IdleTimeout:     120 * time.Second,
+			MaxHeaderBytes:  1 << 20, // 1MB
 		}
 
 		go func() {
@@ -262,10 +275,11 @@ func (a *App) start(ctx context.Context) {
 		adminAddr := fmt.Sprintf("%s:%d", a.config.AdminBind, a.config.AdminPort)
 
 		a.adminServer = &http.Server{
-			Addr:         adminAddr,
-			Handler:      adminHandler,
-			ReadTimeout:  10 * time.Second,
-			WriteTimeout: 10 * time.Second,
+			Addr:            adminAddr,
+			Handler:         adminHandler,
+			ReadTimeout:     10 * time.Second,
+			WriteTimeout:    10 * time.Second,
+			MaxHeaderBytes:  1 << 20, // 1MB
 		}
 
 		go func() {
@@ -698,8 +712,7 @@ func doHealthCheck() {
 // This is extracted for testability
 func performHealthCheck() error {
 	// Check admin endpoint health
-	client := &http.Client{Timeout: 2 * time.Second}
-	resp, err := client.Get(healthCheckURL)
+	resp, err := healthCheckClient.Get(healthCheckURL)
 	if err != nil {
 		return err
 	}

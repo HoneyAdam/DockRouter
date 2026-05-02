@@ -92,8 +92,11 @@ func (c *Config) Validate() error {
 	}
 
 	// Validate ACME email format if provided
-	if c.ACMEEmail != "" && !strings.Contains(c.ACMEEmail, "@") {
-		errs = append(errs, fmt.Errorf("invalid ACME email: %s", c.ACMEEmail))
+	if c.ACMEEmail != "" {
+		parts := strings.SplitN(c.ACMEEmail, "@", 2)
+		if len(parts) != 2 || parts[0] == "" || !strings.Contains(parts[1], ".") {
+			errs = append(errs, fmt.Errorf("invalid ACME email: %s", c.ACMEEmail))
+		}
 	}
 
 	// Warn about security issues

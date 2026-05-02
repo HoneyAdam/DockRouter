@@ -91,5 +91,5 @@ func GetContainerImage(event Event) string {
 
 // EventTimestamp returns the event timestamp as time.Time
 func EventTimestamp(event Event) time.Time {
-	return time.Unix(event.Time, 0)
+	return time.Unix(event.Time, event.TimeNano%1e9)
 }

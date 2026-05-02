@@ -67,15 +67,15 @@ func (rl *RateLimiter) Middleware() Middleware {
 
 			allowed, remaining := rl.allow(key)
 			if !allowed {
-				w.Header().Set("X-RateLimit-Limit", intToStr(rl.rate))
+				w.Header().Set("X-RateLimit-Limit", strconv.Itoa(rl.rate))
 				w.Header().Set("X-RateLimit-Remaining", "0")
-				w.Header().Set("Retry-After", intToStr(rl.window))
+				w.Header().Set("Retry-After", strconv.Itoa(rl.window))
 				http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
 				return
 			}
 
-			w.Header().Set("X-RateLimit-Limit", intToStr(rl.rate))
-			w.Header().Set("X-RateLimit-Remaining", intToStr(int(remaining)))
+			w.Header().Set("X-RateLimit-Limit", strconv.Itoa(rl.rate))
+			w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(int(remaining)))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -148,8 +148,4 @@ func (rl *RateLimiter) cleanup() {
 			rl.mu.Unlock()
 		}
 	}
-}
-
-func intToStr(n int) string {
-	return strconv.Itoa(n)
 }

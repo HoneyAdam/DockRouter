@@ -29,9 +29,7 @@ func newTransport() *http.Transport {
 		IdleConnTimeout:       IdleConnTimeout,
 		ResponseHeaderTimeout: ResponseTimeout,
 
-		// Disable HTTP/2 for better compatibility
-		ForceAttemptHTTP2: false,
-
+		// ForceAttemptHTTP2 only affects h2c (cleartext HTTP/2), not ALPN-negotiated HTTP/2
 		// Enable connection reuse
 		DisableKeepAlives: false,
 

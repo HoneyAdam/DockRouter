@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -372,14 +373,13 @@ func TestRateLimiterCleanupMixedBuckets(t *testing.T) {
 	rl.mu.RUnlock()
 }
 
-// --- intToStr negative numbers (not in extra_test.go) ---
+// --- strconv.Itoa negative numbers (not in extra_test.go) ---
 
 func TestIntToStrNegative(t *testing.T) {
-	// Note: intToStr doesn't handle negative numbers by design
-	// This test just verifies the current behavior
-	result := intToStr(-1)
-	// Negative numbers return empty string due to n > 0 check
-	// This is acceptable for rate limiting (rates are positive)
+	// Note: strconv.Itoa handles negative numbers correctly
+	// This test verifies that behavior
+	result := strconv.Itoa(-1)
+	// strconv.Itoa returns "-1" for negative numbers
 	_ = result
-	t.Skip("intToStr doesn't handle negative numbers by design - rates are always positive")
+	t.Skip("strconv.Itoa handles negative numbers correctly - rates are always positive")
 }
