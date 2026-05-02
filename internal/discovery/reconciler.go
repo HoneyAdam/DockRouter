@@ -390,6 +390,13 @@ func (e *Engine) GetContainer(id string) *ContainerInfo {
 	return info.deepCopy()
 }
 
+// InjectContainerForTest adds a container to the engine's cache (for testing only).
+func (e *Engine) InjectContainerForTest(info *ContainerInfo) {
+	e.mu.Lock()
+	e.containers[info.ID] = info
+	e.mu.Unlock()
+}
+
 // deepCopy creates a deep copy of ContainerInfo, including all nested reference types.
 func (ci *ContainerInfo) deepCopy() *ContainerInfo {
 	cp := *ci
