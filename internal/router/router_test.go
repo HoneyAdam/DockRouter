@@ -250,31 +250,6 @@ func TestBuildErrorPageNoRequestID(t *testing.T) {
 	}
 }
 
-func TestIntToStr(t *testing.T) {
-	tests := []struct {
-		input    int
-		expected string
-	}{
-		{0, "0"},
-		{1, "1"},
-		{10, "10"},
-		{100, "100"},
-		{123, "123"},
-		{502, "502"},
-		{503, "503"},
-		{999, "999"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.expected, func(t *testing.T) {
-			result := intToStr(tt.input)
-			if result != tt.expected {
-				t.Errorf("intToStr(%d) = %q, want %q", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestRouterServeHTTPCaseInsensitiveHost(t *testing.T) {
 	table := NewTable()
 	proxy := &mockProxy{}
