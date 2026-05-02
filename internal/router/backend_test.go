@@ -2,6 +2,7 @@
 package router
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -158,5 +159,19 @@ func TestBackendPoolWeightedRoundRobinSingleTarget(t *testing.T) {
 		if selected.Address != "10.0.0.1:8080" {
 			t.Errorf("Expected 10.0.0.1:8080, got %s", selected.Address)
 		}
+	}
+}
+
+func BenchmarkSelectRoundRobin(b *testing.B) {
+	pool := NewBackendPool(RoundRobin)
+	for i := 0; i < 10; i++ {
+		pool.Add(&BackendTarget{
+			Address: fmt.Sprintf("10.0.0.%d:8080", i),
+			Healthy: true,
+		})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pool.Select("192.168.1.1")
 	}
 }
