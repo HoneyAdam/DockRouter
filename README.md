@@ -11,7 +11,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/dl/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](https://hub.docker.com/r/dockrouter/dockrouter)
 [![GitHub Release](https://img.shields.io/github/v/release/DockRouter/dockrouter?include_prereleases)](https://github.com/DockRouter/dockrouter/releases)
-[![Coverage](https://img.shields.io/badge/Coverage-94.9%25-brightgreen)](.)
+[![Coverage](https://img.shields.io/badge/Coverage-95.0%25-brightgreen)](.)
 
 ---
 
@@ -476,7 +476,7 @@ dockrouter/
 │   ├── middleware/          # HTTP middleware (96.2% coverage)
 │   ├── proxy/               # Reverse proxy (97.2% coverage)
 │   ├── router/              # Route management (97.2% coverage)
-│   └── tls/                 # TLS/ACME (92.6% coverage)
+│   └── tls/                 # TLS/ACME (92.9% coverage)
 ├── examples/                # Example configurations
 ├── scripts/                 # Build scripts
 ├── Dockerfile               # Multi-stage Docker build
@@ -485,7 +485,7 @@ dockrouter/
 └── README.md                # This file
 ```
 
-**Overall test coverage: 94.9% (targeting 85%+)**
+**Overall test coverage: 95.0% (targeting 85%+)**
 
 ---
 
