@@ -11,7 +11,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/dl/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](https://hub.docker.com/r/dockrouter/dockrouter)
 [![GitHub Release](https://img.shields.io/github/v/release/DockRouter/dockrouter?include_prereleases)](https://github.com/DockRouter/dockrouter/releases)
-[![Coverage](https://img.shields.io/badge/Coverage-95.0%25-brightgreen)](.)
+[![Coverage](https://img.shields.io/badge/Coverage-94.1%25-brightgreen)](.)
 
 ---
 
@@ -469,14 +469,14 @@ dockrouter/
 ├── internal/
 │   ├── admin/               # Admin server (95.7% coverage)
 │   ├── config/              # Configuration (95.1% coverage)
-│   ├── discovery/           # Docker discovery (95.9% coverage)
+│   ├── discovery/           # Docker discovery (96.2% coverage)
 │   ├── health/              # Health checking (95.2% coverage)
 │   ├── log/                 # Logging (96.5% coverage)
 │   ├── metrics/             # Prometheus metrics (96.9% coverage)
 │   ├── middleware/          # HTTP middleware (96.2% coverage)
 │   ├── proxy/               # Reverse proxy (97.2% coverage)
 │   ├── router/              # Route management (97.2% coverage)
-│   └── tls/                 # TLS/ACME (92.9% coverage)
+│   └── tls/                 # TLS/ACME (93.6% coverage)
 ├── examples/                # Example configurations
 ├── scripts/                 # Build scripts
 ├── Dockerfile               # Multi-stage Docker build
@@ -485,7 +485,7 @@ dockrouter/
 └── README.md                # This file
 ```
 
-**Overall test coverage: 95.0% (targeting 85%+)**
+**Overall test coverage: 94.1% (targeting 85%+)**
 
 ---
 
