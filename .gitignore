@@ -92,3 +92,6 @@ node_modules/
 .playwright-mcp/*
 .playwright-mcp/
 .dfmt/
+
+# Temp files
+_commit_msg.txt
