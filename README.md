@@ -11,7 +11,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/dl/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](https://hub.docker.com/r/dockrouter/dockrouter)
 [![GitHub Release](https://img.shields.io/github/v/release/DockRouter/dockrouter?include_prereleases)](https://github.com/DockRouter/dockrouter/releases)
-[![Coverage](https://img.shields.io/badge/Coverage-94.2%25-brightgreen)](.)
+[![Coverage](https://img.shields.io/badge/Coverage-94.9%25-brightgreen)](.)
 
 ---
 
@@ -463,20 +463,20 @@ docker run -d \
 
 ```
 dockrouter/
-├── cmd/dockrouter/          # Main application (72.4% coverage)
+├── cmd/dockrouter/          # Main application (88.1% coverage)
 │   ├── main.go              # Entry point
 │   └── dashboard/           # Admin dashboard
 ├── internal/
-│   ├── admin/               # Admin server (98.5% coverage)
-│   ├── config/              # Configuration (95.6% coverage)
-│   ├── discovery/           # Docker discovery (69.9% coverage)
-│   ├── health/              # Health checking (100% coverage)
-│   ├── log/                 # Logging (100% coverage)
-│   ├── metrics/             # Prometheus metrics (100% coverage)
-│   ├── middleware/          # HTTP middleware (96.5% coverage)
-│   ├── proxy/               # Reverse proxy (95.7% coverage)
-│   ├── router/              # Route management (96.7% coverage)
-│   └── tls/                 # TLS/ACME (82.2% coverage)
+│   ├── admin/               # Admin server (95.7% coverage)
+│   ├── config/              # Configuration (95.1% coverage)
+│   ├── discovery/           # Docker discovery (95.9% coverage)
+│   ├── health/              # Health checking (95.2% coverage)
+│   ├── log/                 # Logging (96.5% coverage)
+│   ├── metrics/             # Prometheus metrics (96.9% coverage)
+│   ├── middleware/          # HTTP middleware (96.2% coverage)
+│   ├── proxy/               # Reverse proxy (97.2% coverage)
+│   ├── router/              # Route management (97.2% coverage)
+│   └── tls/                 # TLS/ACME (92.6% coverage)
 ├── examples/                # Example configurations
 ├── scripts/                 # Build scripts
 ├── Dockerfile               # Multi-stage Docker build
@@ -485,7 +485,7 @@ dockrouter/
 └── README.md                # This file
 ```
 
-**Overall test coverage: 94.2% (targeting 85%+)**
+**Overall test coverage: 94.9% (targeting 85%+)**
 
 ---
 
